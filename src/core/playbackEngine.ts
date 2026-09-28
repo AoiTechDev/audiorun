@@ -6,7 +6,7 @@ export class PlaybackEngine extends EventTarget {
   private sourceNode: MediaElementAudioSourceNode | null = null;
   private gainNode: GainNode;
   private state: PlaybackState = "idle";
-  private objectUrl: string | Blob | null = null;
+  private objectUrl: string | null = null;
   constructor() {
     super();
     this.audioContext = new AudioContext();
@@ -55,5 +55,20 @@ export class PlaybackEngine extends EventTarget {
     this.state = "ready";
   }
 
-  detach(): void {}
+  detach(): void {
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.audioElement.src = "";
+      this.audioElement = null;
+    }
+
+    if (this.sourceNode) {
+      this.sourceNode.disconnect(this.gainNode);
+      this.sourceNode = null;
+    }
+
+    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+
+    this.state = "idle";
+  }
 }
