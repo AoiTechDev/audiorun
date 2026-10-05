@@ -1,13 +1,20 @@
 import { PlaybackState } from "./types";
 
 export class PlaybackEngine extends EventTarget {
-  private audioElement: HTMLAudioElement | null = null;
-  private audioContext: AudioContext;
-  private sourceNode: MediaElementAudioSourceNode | null = null;
-  private gainNode: GainNode;
+  private audioElement: HTMLAudioElement | null = null; // actual player, loads file and does play/pause
+  private audioContext: AudioContext; //mixing room of the web audio api. All cables lives here
+  private sourceNode: MediaElementAudioSourceNode | null = null; // cable plug that takes the sound out of the <audio> element and into the mixing room
+  private gainNode: GainNode; //volume knob
+
   private state: PlaybackState = "idle";
   private objectUrl: string | null = null;
+
+  // signal chain <audio> -> sourceNode -> gainNode -> speakers
+  // audioContext.destination - speakers
+
   constructor() {
+    // gainNode -> speakers
+    // it creates the mixing room, the volume knob and wires the knob to the speakers
     super();
     this.audioContext = new AudioContext();
     this.gainNode = new GainNode(this.audioContext, { gain: 0.5 });
@@ -16,12 +23,9 @@ export class PlaybackEngine extends EventTarget {
 
   async attach(source: string | Blob): Promise<void> {
     this.detach();
-
     this.state = "loading";
-
     const audio = document.createElement("audio");
     this.audioElement = audio;
-
     audio.crossOrigin = "anonymous";
     let url: string;
     if (typeof source === "string") {
@@ -33,19 +37,26 @@ export class PlaybackEngine extends EventTarget {
     }
 
     await new Promise<void>((resolve, reject) => {
-      audio.addEventListener("loadedmetadata", () => resolve(), { once: true });
-      audio.addEventListener(
-        "error",
-        () => {
-          this.state = "error";
-          reject(new Error("Failed to attach"));
-        },
-        {
-          once: true,
-        },
-      );
+      const onLoaded = () => {
+        cleanup();
+        resolve();
+      };
+      const onError = () => {
+        cleanup();
+        if (this.audioElement === audio) this.state = "error";
+        reject(new Error("Failed to attach."));
+      };
+      const cleanup = () => {
+        audio.removeEventListener("loadedmetadata", onLoaded);
+        audio.removeEventListener("error", onError);
+      };
+
+      audio.addEventListener("loadedmetadata", onLoaded);
+      audio.addEventListener("error", onError);
       audio.src = url;
     });
+
+    if (this.audioElement !== audio) return;
 
     this.sourceNode = this.audioContext.createMediaElementSource(
       this.audioElement,
@@ -68,10 +79,33 @@ export class PlaybackEngine extends EventTarget {
     }
 
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
-
+    this.objectUrl = null;
     this.state = "idle";
   }
 
+  async play(): Promise<void> {
+    if (this.audioElement === null || this.sourceNode === null)
+      throw new Error("There's nothing to play!");
 
+    const audioElementLocal: HTMLAudioElement = this.audioElement;
 
+    try {
+      if (this.audioContext.state === "suspended")
+        await this.audioContext.resume();
+
+      if (audioElementLocal !== this.audioElement) return;
+
+      await audioElementLocal.play();
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        
+        return;
+      }
+      throw err;
+    }
+
+    if (audioElementLocal !== this.audioElement) return;
+
+    this.state = "playing";
+  }
 }
