@@ -85,7 +85,7 @@ export class PlaybackEngine extends EventTarget {
 
   async play(): Promise<void> {
     if (this.audioElement === null || this.sourceNode === null)
-      throw new Error("There's nothing to play!");
+      throw new Error("There's nothing to play.");
 
     const audioElementLocal: HTMLAudioElement = this.audioElement;
 
@@ -98,7 +98,6 @@ export class PlaybackEngine extends EventTarget {
       await audioElementLocal.play();
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        
         return;
       }
       throw err;
@@ -108,4 +107,14 @@ export class PlaybackEngine extends EventTarget {
 
     this.state = "playing";
   }
+
+  pause(): void {
+    if (this.audioElement === null || this.sourceNode === null)
+      throw new Error("There's nothing to pause.");
+
+    this.audioElement.pause();
+
+    this.state = "paused";
+  }
+
 }
