@@ -117,4 +117,13 @@ export class PlaybackEngine extends EventTarget {
     this.state = "paused";
   }
 
+  stop(): void {
+    if (this.audioElement === null || this.sourceNode === null)
+      throw new Error("There's nothing to stop.");
+
+    this.audioElement.pause();
+    this.audioElement.currentTime = 0;
+
+    this.state = "ready";
+  }
 }
