@@ -126,4 +126,10 @@ export class PlaybackEngine extends EventTarget {
 
     this.state = "ready";
   }
+
+  getVolume(): number {
+    return this.gainNode.gain.value;
+  }
+
+
 }
