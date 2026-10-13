@@ -131,5 +131,10 @@ export class PlaybackEngine extends EventTarget {
     return this.gainNode.gain.value;
   }
 
+  setVolume(value: number): void {
+    if (!Number.isFinite(value) || value < 0 || value > 1)
+      throw new RangeError("Value should be between 0 and 1");
 
+    this.gainNode.gain.value = value;
+  }
 }
