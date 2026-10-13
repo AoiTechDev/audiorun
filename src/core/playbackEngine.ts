@@ -20,6 +20,7 @@ export class PlaybackEngine extends EventTarget {
   }
 
   private setState(state: PlaybackState): void {
+    if (this.state === state) return;
     this.state = state;
   }
   // signal chain <audio> -> sourceNode -> gainNode -> speakers
