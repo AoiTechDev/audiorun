@@ -14,6 +14,10 @@ export class PlaybackEngine extends EventTarget {
   private volume: number = DEFAULT_VOLUME;
   private muted: boolean = false;
 
+  private getAudioElement(): HTMLAudioElement | null {
+    if (this.sourceNode === null || this.audioElement === null) return null;
+    return this.audioElement;
+  }
   // signal chain <audio> -> sourceNode -> gainNode -> speakers
   // audioContext.destination - speakers
 
@@ -89,18 +93,16 @@ export class PlaybackEngine extends EventTarget {
   }
 
   async play(): Promise<void> {
-    if (this.audioElement === null || this.sourceNode === null)
-      throw new Error("There's nothing to play.");
-
-    const audioElementLocal: HTMLAudioElement = this.audioElement;
+    const audioElement = this.getAudioElement();
+    if (!audioElement) throw new Error("There's nothing to play.");
 
     try {
       if (this.audioContext.state === "suspended")
         await this.audioContext.resume();
 
-      if (audioElementLocal !== this.audioElement) return;
+      if (audioElement !== this.audioElement) return;
 
-      await audioElementLocal.play();
+      await audioElement.play();
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         return;
@@ -108,26 +110,26 @@ export class PlaybackEngine extends EventTarget {
       throw err;
     }
 
-    if (audioElementLocal !== this.audioElement) return;
+    if (audioElement !== this.audioElement) return;
 
     this.state = "playing";
   }
 
   pause(): void {
-    if (this.audioElement === null || this.sourceNode === null)
-      throw new Error("There's nothing to pause.");
+    const audioElement = this.getAudioElement();
+    if (!audioElement) throw new Error("There's nothing to pause.");
 
-    this.audioElement.pause();
+    audioElement.pause();
 
     this.state = "paused";
   }
 
   stop(): void {
-    if (this.audioElement === null || this.sourceNode === null)
-      throw new Error("There's nothing to stop.");
+    const audioElement = this.getAudioElement();
+    if (!audioElement) throw new Error("There's nothing to stop.");
 
-    this.audioElement.pause();
-    this.audioElement.currentTime = 0;
+    audioElement.pause();
+    audioElement.currentTime = 0;
 
     this.state = "ready";
   }
@@ -157,5 +159,30 @@ export class PlaybackEngine extends EventTarget {
 
   isMuted(): boolean {
     return this.muted;
+  }
+
+  getCurrentTime(): number {
+    const audioElement = this.getAudioElement();
+    if (!audioElement) return 0;
+    return audioElement.currentTime;
+  }
+
+  getDuration(): number {
+    const audioElement = this.getAudioElement();
+    if (!audioElement) return 0;
+    return audioElement.duration;
+  }
+
+  seek(value: number): void {
+    const audioElement = this.getAudioElement();
+    if (!audioElement) throw new Error("There's no track attached");
+    if (!Number.isFinite(audioElement.duration))
+      throw new Error("Duration can't be infinite, livestream not supported");
+    if (!Number.isFinite(value) || value < 0 || value > audioElement.duration)
+      throw new RangeError(
+        `Seek value need to be between 0 and duration of the track ${audioElement.duration} but got ${value}`,
+      );
+
+    audioElement.currentTime = value;
   }
 }
