@@ -14,7 +14,7 @@ export class PlaybackEngine extends EventTarget {
   private volume: number = DEFAULT_VOLUME;
   private muted: boolean = false;
 
-  private getAudioElement(): HTMLAudioElement | null {
+  private getReadyAudioElement(): HTMLAudioElement | null {
     if (this.sourceNode === null || this.audioElement === null) return null;
     return this.audioElement;
   }
@@ -97,7 +97,7 @@ export class PlaybackEngine extends EventTarget {
   }
 
   async play(): Promise<void> {
-    const audioElement = this.getAudioElement();
+    const audioElement = this.getReadyAudioElement();
     if (!audioElement) throw new Error("There's nothing to play.");
 
     try {
@@ -120,7 +120,7 @@ export class PlaybackEngine extends EventTarget {
   }
 
   pause(): void {
-    const audioElement = this.getAudioElement();
+    const audioElement = this.getReadyAudioElement();
     if (!audioElement) throw new Error("There's nothing to pause.");
 
     audioElement.pause();
@@ -129,7 +129,7 @@ export class PlaybackEngine extends EventTarget {
   }
 
   stop(): void {
-    const audioElement = this.getAudioElement();
+    const audioElement = this.getReadyAudioElement();
     if (!audioElement) throw new Error("There's nothing to stop.");
 
     audioElement.pause();
@@ -166,19 +166,19 @@ export class PlaybackEngine extends EventTarget {
   }
 
   getCurrentTime(): number {
-    const audioElement = this.getAudioElement();
+    const audioElement = this.getReadyAudioElement();
     if (!audioElement) return 0;
     return audioElement.currentTime;
   }
 
   getDuration(): number {
-    const audioElement = this.getAudioElement();
+    const audioElement = this.getReadyAudioElement();
     if (!audioElement) return 0;
     return audioElement.duration;
   }
 
   seek(value: number): void {
-    const audioElement = this.getAudioElement();
+    const audioElement = this.getReadyAudioElement();
     if (!audioElement) throw new Error("There's no track attached");
     if (!Number.isFinite(audioElement.duration))
       throw new Error("Duration can't be infinite, livestream not supported");
