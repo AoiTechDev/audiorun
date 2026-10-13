@@ -1,5 +1,7 @@
 import { PlaybackState } from "./types";
 
+const DEFAULT_VOLUME = 0.5;
+
 export class PlaybackEngine extends EventTarget {
   private audioElement: HTMLAudioElement | null = null; // actual player, loads file and does play/pause
   private audioContext: AudioContext; //mixing room of the web audio api. All cables lives here
@@ -9,6 +11,9 @@ export class PlaybackEngine extends EventTarget {
   private state: PlaybackState = "idle";
   private objectUrl: string | null = null;
 
+  private volume: number = DEFAULT_VOLUME;
+  private muted: boolean = false;
+
   // signal chain <audio> -> sourceNode -> gainNode -> speakers
   // audioContext.destination - speakers
 
@@ -17,7 +22,7 @@ export class PlaybackEngine extends EventTarget {
     // it creates the mixing room, the volume knob and wires the knob to the speakers
     super();
     this.audioContext = new AudioContext();
-    this.gainNode = new GainNode(this.audioContext, { gain: 0.5 });
+    this.gainNode = new GainNode(this.audioContext, { gain: DEFAULT_VOLUME });
     this.gainNode.connect(this.audioContext.destination);
   }
 
@@ -128,13 +133,29 @@ export class PlaybackEngine extends EventTarget {
   }
 
   getVolume(): number {
-    return this.gainNode.gain.value;
+    return this.volume;
   }
 
   setVolume(value: number): void {
     if (!Number.isFinite(value) || value < 0 || value > 1)
-      throw new RangeError("Value should be between 0 and 1");
+      throw new RangeError(`Value should be between 0 and 1 and got ${value}`);
 
+    this.muted = false;
+    this.volume = value;
     this.gainNode.gain.value = value;
+  }
+
+  mute(): void {
+    this.muted = true;
+    this.gainNode.gain.value = 0;
+  }
+
+  unmute(): void {
+    this.muted = false;
+    this.gainNode.gain.value = this.volume;
+  }
+
+  isMuted(): boolean {
+    return this.muted;
   }
 }
