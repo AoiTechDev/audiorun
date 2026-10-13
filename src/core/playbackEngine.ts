@@ -18,6 +18,10 @@ export class PlaybackEngine extends EventTarget {
     if (this.sourceNode === null || this.audioElement === null) return null;
     return this.audioElement;
   }
+
+  private setState(state: PlaybackState): void {
+    this.state = state;
+  }
   // signal chain <audio> -> sourceNode -> gainNode -> speakers
   // audioContext.destination - speakers
 
@@ -32,7 +36,7 @@ export class PlaybackEngine extends EventTarget {
 
   async attach(source: string | Blob): Promise<void> {
     this.detach();
-    this.state = "loading";
+    this.setState("loading");
     const audio = document.createElement("audio");
     this.audioElement = audio;
     audio.crossOrigin = "anonymous";
@@ -52,7 +56,7 @@ export class PlaybackEngine extends EventTarget {
       };
       const onError = () => {
         cleanup();
-        if (this.audioElement === audio) this.state = "error";
+        if (this.audioElement === audio) this.setState("error");
         reject(new Error("Failed to attach."));
       };
       const cleanup = () => {
@@ -72,7 +76,7 @@ export class PlaybackEngine extends EventTarget {
     );
     this.sourceNode.connect(this.gainNode);
 
-    this.state = "ready";
+    this.setState("ready");
   }
 
   detach(): void {
@@ -89,7 +93,7 @@ export class PlaybackEngine extends EventTarget {
 
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
     this.objectUrl = null;
-    this.state = "idle";
+    this.setState("idle");
   }
 
   async play(): Promise<void> {
@@ -112,7 +116,7 @@ export class PlaybackEngine extends EventTarget {
 
     if (audioElement !== this.audioElement) return;
 
-    this.state = "playing";
+    this.setState("playing");
   }
 
   pause(): void {
@@ -121,7 +125,7 @@ export class PlaybackEngine extends EventTarget {
 
     audioElement.pause();
 
-    this.state = "paused";
+    this.setState("paused");
   }
 
   stop(): void {
@@ -131,7 +135,7 @@ export class PlaybackEngine extends EventTarget {
     audioElement.pause();
     audioElement.currentTime = 0;
 
-    this.state = "ready";
+    this.setState("ready");
   }
 
   getVolume(): number {
