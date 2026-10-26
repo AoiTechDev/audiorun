@@ -22,6 +22,9 @@ export class PlaybackEngine extends EventTarget {
   private setState(state: PlaybackState): void {
     if (this.state === state) return;
     this.state = state;
+    this.dispatchEvent(
+      new CustomEvent<PlaybackState>("statechange", { detail: state }),
+    );
   }
   // signal chain <audio> -> sourceNode -> gainNode -> speakers
   // audioContext.destination - speakers
