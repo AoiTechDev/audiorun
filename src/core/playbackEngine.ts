@@ -193,4 +193,11 @@ export class PlaybackEngine extends EventTarget {
 
     audioElement.currentTime = value;
   }
+
+  getState(): PlaybackState {
+    return this.state;
+  }
+
+
+  
 }

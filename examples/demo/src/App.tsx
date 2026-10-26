@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import { PlaybackEngine } from 'audiorun'
 function App() {
@@ -13,7 +13,9 @@ function App() {
     engine.current.attach(f)
   }
 
-  console.log(file)
+  useEffect(() => {
+    engine.current.addEventListener("statechange", (e) => e.detail)
+  }, [])
   return <div>
     <button onClick={() => engine.current.play()}>play</button>
     <input type='file' onChange={onFileChange} />
